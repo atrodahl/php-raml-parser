@@ -190,16 +190,7 @@ class Parser
      */
     public function parse($fileName, $parseSchemas = true)
     {
-        if (!is_file($fileName)) {
-            throw new FileNotFoundException($fileName);
-        }
-
-        $rootDir = dirname($fileName);
-        $ramlString = file_get_contents($fileName);
-
-        $ramlData = $this->parseRamlString($ramlString, $rootDir, $parseSchemas);
-
-        return $this->parseRamlData($ramlData, $rootDir, $parseSchemas);
+        return $this->createDefinition($this->parseToArray($fileName, $parseSchemas));
     }
 
     /**
@@ -216,8 +207,38 @@ class Parser
     public function parseFromString($ramlString, $rootDir, $parseSchemas = true)
     {
         $ramlData = $this->parseRamlString($ramlString, $rootDir, $parseSchemas);
+        return $this->createDefinition($this->parseRamlData($ramlData, $rootDir, $parseSchemas));
+    }
 
+    /**
+     * Parse a RAML spec from a file
+     *
+     * @param string  $fileName
+     * @param boolean $parseSchemas
+     *
+     * @throws FileNotFoundException
+     * @throws RamlParserException
+     *
+     * @return array
+     */
+    public function parseToArray($fileName, $parseSchemas = true) {
+        if (!is_file($fileName)) {
+            throw new FileNotFoundException($fileName);
+        }
+
+        $rootDir = dirname($fileName);
+        $ramlString = file_get_contents($fileName);
+
+        $ramlData = $this->parseRamlString($ramlString, $rootDir, $parseSchemas);
         return $this->parseRamlData($ramlData, $rootDir, $parseSchemas);
+    }
+
+    /**
+     * @param array $ramlData
+     * @return \Raml\ApiDefinition
+     */
+    private function createDefinition(array $ramlData) {
+        return ApiDefinition::createFromArray($ramlData['title'], $ramlData);
     }
 
     /**
@@ -268,7 +289,7 @@ class Parser
             $ramlData['securitySchemes'] = $this->parseSecuritySettings($ramlData['securitySchemes']);
         }
 
-        return ApiDefinition::createFromArray($ramlData['title'], $ramlData);
+        return $ramlData;
     }
 
     /**
